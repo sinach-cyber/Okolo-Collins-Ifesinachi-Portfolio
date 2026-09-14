@@ -414,20 +414,11 @@ const Services = () => {
                   <motion.div
                     key={index}
                     className={`${service.color
-                      } bg-opacity-10 border border-gray-200 rounded-xl p-6 hover:scale-105 transition-transform ${service.link ? "cursor-pointer" : ""
-                      }`}
+                      } bg-opacity-10 border border-gray-200 rounded-xl p-6 hover:scale-105 transition-transform}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: (index + 5) * 0.1 }}
-                    onClick={() => {
-                      if (service.link) {
-                        window.open(
-                          service.link,
-                          "_blank",
-                          "noopener,noreferrer"
-                        );
-                      }
-                    }}
+
                   >
                     <div className="mb-4">
                       {
