@@ -1,0 +1,291 @@
+import Swiper from "swiper";
+import { Navigation, Pagination } from "swiper/modules";
+import { doc, dqs, dqsa } from "./utils.js";
+import { track } from "../analytics/umami.js";
+import { setQueryParam, deleteQueryParam, getQueryParam } from "./queryParams.js";
+import projects from "../../../temp/projects.json";
+
+
+const INITIAL_HISTORY_LENGTH = window.history.length;
+const PROJECT_PARAM = "project";
+
+const SCROLL_HINT_ANIMATION_CLASS = "project-popup__image-scroll-hint_animation";
+
+
+const projectPopup = {
+
+	setTitle(title) {
+		const placeholderEl = dqs(".project-popup__h2-placeholder");
+		const titleEl = placeholderEl
+			? document.createElement("h2")
+			: dqs(".project-popup__container h2");
+		titleEl.textContent = title;
+		if (placeholderEl) {
+			placeholderEl.replaceWith(titleEl);
+		}
+	},
+
+	setDescription(descriptionText) {
+		const descriptionElem = dqs(".project-popup__container p");
+		descriptionElem.textContent = descriptionText;
+		descriptionElem.scrollTop = 0;
+	},
+
+	setLinkButtons(repositoryLink, demoLink, projectFolder) {
+		const linkButtons = [repositoryLink, demoLink];
+
+		linkButtons.forEach((link, index) => {
+			const btn = dqs(`.project-popup__btn:nth-child(${index + 1})`);
+			const isLinkEmpty = link == "";
+
+			btn.classList.toggle("project-popup__btn_disabled", isLinkEmpty);
+
+			if (isLinkEmpty) {
+				btn.removeAttribute("href");
+			} else {
+				btn.href = link;
+				btn.dataset.umamiEventProject = projectFolder;
+			}
+		});
+
+		dqs(".project-popup__btns").classList.toggle(
+			"project-popup__btns_disabled",
+			linkButtons.every(link => link == "")
+		);
+	},
+}
+
+function imageSlideHTML(projectFolder, index) {
+
+	const imageUrl =
+		`/img/project-images/${projectFolder}/screenshot.jpg`;
+
+	return `
+        <div class="project-popup__image-slide swiper-slide">
+            <div class="project-popup__image-slide-loader"></div>
+
+            <a
+                href="${imageUrl}"
+                target="_blank"
+                data-project="${projectFolder}"
+                data-screenshot-index="${index}"
+            >
+                <picture>
+                    <img
+                        src="${imageUrl}"
+                        alt="${projectFolder} project screenshot"
+                    >
+                </picture>
+            </a>
+        </div>
+    `;
+}
+
+/**
+ * @param {HTMLAnchorElement} slideLinkEl 
+ */
+export function handleSlideLinkClick(slideLinkEl) {
+	track("project-popup-screenshot-click", buildUmamiEventProps(slideLinkEl));
+}
+
+/**
+ * @param {HTMLAnchorElement} slideLinkEl 
+ */
+function buildUmamiEventProps(slideLinkEl) {
+	const { project, screenshotIndex } = slideLinkEl.dataset;
+	return {
+		project: project,
+		"screenshot-index": Number(screenshotIndex),
+		screenshot: project + "_" + screenshotIndex,
+	}
+}
+
+/**
+ * @param {HTMLPictureElement} picture 
+ * @param {number} slideIndex 
+ * @returns {void}
+ */
+function addSlidePictureLoadHandler(picture, slideIndex) {
+
+	const imgEl = picture.querySelector("img");
+
+	async function onLoad() {
+		try {
+			await imgEl.decode();
+		} catch (error) {
+			console.error(error);
+		}
+		window.requestAnimationFrame(() => {
+			window.requestAnimationFrame(() => {
+				const slideEl = picture.closest(".project-popup__image-slide");
+				slideEl.classList.add("project-popup__image-slide_img-loaded");
+				const loaderEl =
+					slideEl.querySelector(".project-popup__image-slide-loader");
+				loaderEl.addEventListener("transitionend", loaderEl.remove);
+				if (slideIndex === 0) scheduleScrollHintIfImageIsScrollable(imgEl);
+			});
+		});
+	}
+
+	if (imgEl.complete) {
+		onLoad();
+	} else {
+		imgEl.addEventListener("load", onLoad, { once: true });
+	}
+}
+
+function addPictureLoadHandlerToAllSlides() {
+	dqsa(".project-popup__image-slide picture").forEach(addSlidePictureLoadHandler);
+}
+
+function imageSlideScrollEvent(event) {
+	track("project-popup-screenshot-scroll", buildUmamiEventProps(event.target));
+}
+
+function addScrollEventToImageSlides() {
+	const slideLinkEls = dqsa(".project-popup__image .swiper-slide a");
+	slideLinkEls.forEach(linkEl => {
+		linkEl.addEventListener("scroll", imageSlideScrollEvent, { once: true });
+	});
+}
+
+function scheduleScrollHintIfImageIsScrollable(image) {
+
+	const scrollableContainerEl = image.closest("a");
+	const scrollHintEl = dqs(".project-popup__image-scroll-hint");
+
+	if (scrollHintEl.classList.contains(SCROLL_HINT_ANIMATION_CLASS)) return;
+
+	setTimeout(() => {
+		if (image.scrollHeight > scrollableContainerEl.clientHeight) {
+			scrollHintEl.classList.add(SCROLL_HINT_ANIMATION_CLASS);
+		}
+	}, 500);
+
+	scrollableContainerEl.addEventListener("scroll", () => {
+		const [animation] = scrollHintEl.getAnimations();
+		if (animation && animation.playState === "running") {
+			animation.updatePlaybackRate(2);
+		} else {
+			// Prevent hint animation if scroll starts before animation begins
+			scrollHintEl.style.display = "none";
+		}
+	}, { once: true });
+}
+
+export function openProjectPopup(project, shouldPushState = true) {
+
+	if (shouldPushState) {
+		setQueryParam(PROJECT_PARAM, project.folder);
+	}
+	if (dqs("." + SCROLL_HINT_ANIMATION_CLASS)) {
+		dqs("." + SCROLL_HINT_ANIMATION_CLASS).style.display = "none";
+	}
+
+	projectPopup.setTitle(project.title);
+	projectPopup.setDescription(project.description);
+	projectPopup
+		.setLinkButtons(project.repository, project.demo, project.folder);
+
+	let imageSlideElems = ``;
+	for (let index = 1; index <= project.screenshots; index++) {
+		imageSlideElems += imageSlideHTML(project.folder, index);
+	}
+	dqs(".project-popup__image .swiper-wrapper").innerHTML = imageSlideElems;
+	if (projectPopupSwiper.activeIndex !== 0) isProgrammaticSlideChange = true;
+	projectPopupSwiper.update();
+	projectPopupSwiper.slideTo(0, 1, false);
+	addScrollEventToImageSlides();
+
+	dqs(".project-popup").addEventListener(
+		"transitionend",
+		addPictureLoadHandlerToAllSlides,
+		{ once: true }
+	);
+
+	document.body.style.overflowY = "hidden";
+	dqs(".project-popup").classList.add("project-popup_open");
+}
+
+/**
+ * @param {"button" | "backdrop" | "esc" | "back"} method 
+ * @returns {void}
+ */
+export function closeProjectPopup(method) {
+
+	dqs(".project-popup")
+		.removeEventListener("transitionend", addPictureLoadHandlerToAllSlides);
+
+	document.body.style.overflowY = "";
+	dqs(".project-popup").classList.remove("project-popup_open");
+
+	if (method !== "back") {
+		if (INITIAL_HISTORY_LENGTH === window.history.length) {
+			deleteQueryParam(PROJECT_PARAM, { replace: true });
+		} else {
+			window.history.back();
+		}
+	}
+
+	track("project-popup-close", { method });
+}
+
+
+let isProgrammaticSlideChange = false;
+const projectPopupSwiper = new Swiper('.project-popup__image-swiper', {
+
+	modules: [Navigation, Pagination],
+
+	navigation: {
+		nextEl: '.project-popup__image .swiper-nav_right',
+		prevEl: '.project-popup__image .swiper-nav_left',
+	},
+
+	pagination: {
+		el: '.project-popup__swiper-pagination',
+		type: 'fraction',
+	},
+
+	simulateTouch: false,
+
+	on: {
+		slideChange: swiper => {
+			if (!isProgrammaticSlideChange) {
+				const linkEl = swiper.slides[swiper.activeIndex].querySelector("a");
+				const umamiEventProps = buildUmamiEventProps(linkEl);
+				track("project-popup-swiper-slide-change", {
+					project: umamiEventProps.project,
+					"to-index": umamiEventProps["screenshot-index"],
+					"to-screenshot": umamiEventProps.screenshot,
+					direction:
+						swiper.previousIndex < swiper.activeIndex ? "next" : "prev",
+				});
+			}
+			isProgrammaticSlideChange = false;
+		},
+	},
+});
+
+doc.addEventListener("keydown", event => {
+	if (event.key == "Escape") closeProjectPopup("esc");
+});
+
+window.addEventListener("popstate", () => {
+	const projectParamValue = getQueryParam(PROJECT_PARAM);
+	if (projectParamValue) {
+		const project = projects.find(p => p.folder === projectParamValue);
+		openProjectPopup(project, false);
+	} else {
+		closeProjectPopup("back");
+	}
+});
+
+const INITIAL_PROJECT_PARAM_VALUE = getQueryParam(PROJECT_PARAM);
+if (INITIAL_PROJECT_PARAM_VALUE) {
+	const project = projects.find(p => p.folder === INITIAL_PROJECT_PARAM_VALUE);
+	if (project) {
+		window.addEventListener("load", () => openProjectPopup(project, false));
+	} else {
+		deleteQueryParam(PROJECT_PARAM, { replace: true });
+	}
+}

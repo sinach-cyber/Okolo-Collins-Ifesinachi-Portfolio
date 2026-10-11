@@ -1,0 +1,57 @@
+name: Monitor Umami Script
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+      timezone: 'Europe/Berlin'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Fetch latest Umami script
+        run: curl -fsSL https://cloud.umami.is/script.js -o /tmp/umami-new.js
+
+      - name: Fetch current js/u.js from gh-pages branch
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/js/u.js" \
+            -o /tmp/umami-old.js
+
+      - name: Compare files
+        id: check
+        run: |
+          if diff -q /tmp/umami-old.js /tmp/umami-new.js > /dev/null 2>&1; then
+            echo "status=unchanged" >> $GITHUB_OUTPUT
+          else
+            echo "status=changed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Format both files with Prettier
+        if: steps.check.outputs.status == 'changed'
+        run: |
+          npx --yes prettier --parser babel /tmp/umami-old.js > /tmp/umami-old-fmt.js
+          npx prettier --parser babel /tmp/umami-new.js > /tmp/umami-new-fmt.js
+
+      - name: Generate diff
+        if: steps.check.outputs.status == 'changed'
+        run: |
+          diff -U 999999 /tmp/umami-old-fmt.js /tmp/umami-new-fmt.js > /tmp/umami.diff || true
+
+      - name: Open GitHub Issue with diff
+        if: steps.check.outputs.status == 'changed'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('/tmp/umami.diff', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ umami script has changed',
+              body: '```diff\n' + diff + '\n```\n',
+            });

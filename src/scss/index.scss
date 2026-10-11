@@ -1,0 +1,18 @@
+@use "base/reset";
+@use "base/base";
+
+@use "layouts/main";
+@use "layouts/title-content";
+
+@use "../components/swiper-nav/swiper-nav";
+@use "../components/project-popup/project-popup";
+@use "../components/header/header";
+@use "../components/hamburger/hamburger";
+@use "../components/home/home";
+@use "../components/about/about";
+@use "../components/projects/projects";
+@use "../components/skills/skills";
+@use "../components/reviews/reviews";
+@use "../components/contact/contact";
+@use "../components/footer/footer";
+@use "../components/privacy/privacy";

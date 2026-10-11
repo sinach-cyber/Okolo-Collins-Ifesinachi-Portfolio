@@ -1,0 +1,56 @@
+@use "../../scss/abstracts/variables" as *;
+@use "../../scss/abstracts/mixins" as *;
+
+
+.contact {
+
+	&__container {
+		@include container(750px, $section-gap);
+	}
+
+	&__links {
+		display: flex;
+		justify-content: center;
+		gap: 20px;
+		flex-wrap: wrap;
+	}
+
+	&__link {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		width: 60px;
+		height: 60px;
+
+		background: #1E293B;
+		border-radius: 50px;
+
+		color: #FFF;
+
+		transition: all 0.3s;
+
+		svg {
+			width: 25px;
+			height: 25px;
+		}
+	}
+}
+
+@media (hover: hover) {
+	.contact {
+
+		&__link:hover {
+			background: #2C66C3;
+		}
+	}
+}
+
+@media (max-width: 575.5px) {
+	.contact {
+
+		&__container {
+			padding-top: $section-gap-min;
+		}
+	}
+}

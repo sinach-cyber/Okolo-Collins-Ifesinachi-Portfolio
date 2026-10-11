@@ -1,0 +1,67 @@
+.swiper-nav {
+	$diameter: 30px;
+	--center-y: calc(50% - #{$diameter} / 2);
+
+	position: absolute;
+	top: var(--center-y);
+
+	width: $diameter;
+	height: $diameter;
+
+	border-radius: 30px;
+	background: transparent;
+
+	cursor: pointer;
+
+	transition: all 0.3s;
+
+	@media (hover: hover) {
+		&:hover {
+			background: #293548;
+		}
+	}
+
+
+	&:before,
+	&:after {
+		content: "";
+
+		position: absolute;
+		left: 7px;
+
+		width: 13px;
+		height: 3px;
+
+		background: #D4D7DA;
+		border-radius: 3px;
+	}
+
+	&:before {
+		top: 9.5px;
+
+		transform: rotate(-45deg);
+	}
+
+	&:after {
+		bottom: 9.5px;
+		
+		transform: rotate(45deg);
+	}
+
+	&_left {
+		left: 0;
+	}
+	&_right {
+		right: 0;
+
+		transform: rotate(180deg);
+	}
+
+	&:disabled {
+		background: transparent !important;
+
+		cursor: auto;
+
+		opacity: 0.3;
+	}
+}

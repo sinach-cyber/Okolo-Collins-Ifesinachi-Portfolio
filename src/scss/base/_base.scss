@@ -1,0 +1,25 @@
+@use "pkg:@fontsource-variable/roboto/wght.css";
+@use "pkg:@fontsource-variable/roboto/wght-italic.css";
+
+@use "../../components/header/header";
+@use "../../components/hamburger/hamburger";
+
+
+html {
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+    scroll-padding-top: header.$height;
+
+    @media (max-width: 575.5px) {
+        scroll-padding-top: calc(hamburger.$size + (hamburger.$top * 2));
+    }
+}
+
+body {
+    background: #111827;
+
+    color: #FFF;
+	font-family: "Roboto Variable", sans-serif;
+	font-size: 16px;
+	line-height: 19px;
+}

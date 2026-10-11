@@ -1,0 +1,47 @@
+@use "../../scss/abstracts/variables" as *;
+@use "../../scss/abstracts/mixins" as *;
+
+.about {
+  &__container {
+    @include container(900px, $section-gap);
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    padding: 30px;
+    background: #293548;
+    border-radius: 15px;
+
+    p {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.8;
+      font-weight: 350;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 575.5px) {
+  .about {
+    &__container {
+      padding-top: $section-gap-min;
+    }
+
+    &__content {
+      gap: 15px;
+      padding: 20px;
+
+      p {
+        font-size: 15px;
+        line-height: 1.7;
+      }
+    }
+  }
+}

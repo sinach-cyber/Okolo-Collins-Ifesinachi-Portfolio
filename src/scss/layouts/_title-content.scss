@@ -1,0 +1,33 @@
+.title-content {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 20px;
+
+	& > h1,
+	& > h2 {
+		position: relative;
+
+		padding: 0 0 15px 0;
+
+		font-size: 40px;
+		line-height: 47px;
+
+		&:after {
+			content: "";
+
+			position: absolute;
+			bottom: 0;
+			left: calc(50% - 62px);
+
+			display: inline-block;
+			width: 124px;
+			height: 10px;
+
+			background: #2C66C3;
+			box-shadow: 0px 0px 14px rgba(44, 102, 195, 0.5);
+			border-radius: 50px;
+		}
+	}
+}
